@@ -18,13 +18,13 @@ const (
 )
 
 type UserHandler struct {
-	emailRexExp    *regexp.Regexp       // 用于邮箱格式验证的正则表达式。
-	passwordRexExp *regexp.Regexp       // 用于密码格式验证的正则表达式。
-	svc            *service.UserService // 用户服务实例，处理用户业务逻辑。
-	codeSvc        *service.CodeService // 验证码服务实例，处理验证码逻辑。
+	emailRexExp    *regexp.Regexp      // 用于邮箱格式验证的正则表达式。
+	passwordRexExp *regexp.Regexp      // 用于密码格式验证的正则表达式。
+	svc            service.UserService // 用户服务实例，处理用户业务逻辑。
+	codeSvc        service.CodeService // 验证码服务实例，处理验证码逻辑。
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	return &UserHandler{
 		emailRexExp:    regexp.MustCompile(emailRegexPattern, regexp.None),
 		passwordRexExp: regexp.MustCompile(passwordRegexPattern, regexp.None),

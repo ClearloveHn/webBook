@@ -12,20 +12,25 @@ import (
 // ErrKeyNotExist 定义ErrKeyNotExist为redis.Nil，表示当Redis中不存在该键时返回的错误
 var ErrKeyNotExist = redis.Nil
 
-type UserCache struct {
+type UserCache interface {
+	Get(ctx context.Context, uid int64) (domain.User, error)
+	Set(ctx context.Context, du domain.User) error
+}
+
+type RedisUserCache struct {
 	cmd        redis.Cmdable
 	expiration time.Duration // expiration字段，设置缓存过期时间。
 }
 
-func NewUserCache(cmd redis.Cmdable) *UserCache {
-	return &UserCache{
+func NewUserCache(cmd redis.Cmdable) UserCache {
+	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,
 	}
 }
 
 // Get 方法，从缓存中获取用户信息。
-func (c *UserCache) Get(ctx context.Context, uid int64) (domain.User, error) {
+func (c *RedisUserCache) Get(ctx context.Context, uid int64) (domain.User, error) {
 	key := c.key(uid)
 	data, err := c.cmd.Get(ctx, key).Result() // 从Redis获取数据。
 	if err != nil {
@@ -37,7 +42,7 @@ func (c *UserCache) Get(ctx context.Context, uid int64) (domain.User, error) {
 }
 
 // Set 方法，将用户信息设置到缓存中。
-func (c *UserCache) Set(ctx context.Context, du domain.User) error {
+func (c *RedisUserCache) Set(ctx context.Context, du domain.User) error {
 	key := c.key(du.Id)
 	data, err := json.Marshal(du)
 	if err != nil {
@@ -47,6 +52,6 @@ func (c *UserCache) Set(ctx context.Context, du domain.User) error {
 }
 
 // key 方法，生成Redis键名。
-func (c *UserCache) key(uid int64) string {
+func (c *RedisUserCache) key(uid int64) string {
 	return fmt.Sprintf("user:info:%d", uid) // 格式化生成特定格式的键名。
 }

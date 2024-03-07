@@ -15,25 +15,33 @@ var (
 	ErrUserNotFound  = dao.ErrRecordNotFound // 导出错误，表示未找到用户记录。
 )
 
-type UserRepository struct {
-	dao   *dao.UserDAO     // dao字段，指向UserDAO结构体实例，用于数据库操作。
-	cache *cache.UserCache // cache字段，指向UserCache结构体实例，用于缓存操作。
+type UserRepository interface {
+	Create(ctx context.Context, u domain.User) error
+	FindByEmail(ctx context.Context, email string) (domain.User, error)
+	UpdateNonZeroFields(ctx context.Context, user domain.User) error
+	FindByPhone(ctx context.Context, phone string) (domain.User, error)
+	FindById(ctx context.Context, uid int64) (domain.User, error)
 }
 
-func NewUserRepository(dao *dao.UserDAO, c *cache.UserCache) *UserRepository {
-	return &UserRepository{
+type CachedUserRepository struct {
+	dao   dao.UserDAO     // dao字段，指向UserDAO结构体实例，用于数据库操作。
+	cache cache.UserCache // cache字段，指向UserCache结构体实例，用于缓存操作。
+}
+
+func NewCachedUserRepository(dao dao.UserDAO, c cache.UserCache) UserRepository {
+	return &CachedUserRepository{
 		dao:   dao,
 		cache: c,
 	}
 }
 
 // Create 方法，创建新用户。
-func (repo *UserRepository) Create(ctx context.Context, u domain.User) error {
+func (repo *CachedUserRepository) Create(ctx context.Context, u domain.User) error {
 	return repo.dao.Insert(ctx, repo.toEntity(u))
 }
 
 // FindByEmail 方法，通过邮箱查找用户。
-func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
+func (repo *CachedUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	u, err := repo.dao.FindByEmail(ctx, email)
 	if err != nil {
 		return domain.User{}, err
@@ -42,7 +50,7 @@ func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (doma
 }
 
 // toDomain 方法，将dao层的User转换为domain层的User。
-func (repo *UserRepository) toDomain(u dao.User) domain.User {
+func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 	return domain.User{
 		Id:       u.Id,
 		Email:    u.Email.String, // 注意处理sql.NullString。
@@ -55,7 +63,7 @@ func (repo *UserRepository) toDomain(u dao.User) domain.User {
 }
 
 // toEntity 方法，将domain层的User转换为dao层的User。
-func (repo *UserRepository) toEntity(u domain.User) dao.User {
+func (repo *CachedUserRepository) toEntity(u domain.User) dao.User {
 	return dao.User{
 		Id: u.Id,
 		Email: sql.NullString{
@@ -74,12 +82,12 @@ func (repo *UserRepository) toEntity(u domain.User) dao.User {
 }
 
 // UpdateNonZeroFields 方法，更新用户信息中的非零字段。
-func (repo *UserRepository) UpdateNonZeroFields(ctx context.Context, user domain.User) error {
+func (repo *CachedUserRepository) UpdateNonZeroFields(ctx context.Context, user domain.User) error {
 	return repo.dao.UpdateById(ctx, repo.toEntity(user))
 }
 
 // FindById 方法，通过ID查找用户，首先尝试从缓存中获取，失败则从数据库获取。
-func (repo *UserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
+func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	du, err := repo.cache.Get(ctx, uid)
 	if err == nil {
 		return du, nil
@@ -98,7 +106,7 @@ func (repo *UserRepository) FindById(ctx context.Context, uid int64) (domain.Use
 }
 
 // FindByPhone 方法，通过电话号码查找用户。
-func (repo *UserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
+func (repo *CachedUserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
 	u, err := repo.dao.FindByPhone(ctx, phone)
 	if err != nil {
 		return domain.User{}, err

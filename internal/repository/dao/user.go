@@ -14,12 +14,20 @@ var (
 	ErrRecordNotFound = gorm.ErrRecordNotFound // 将GORM的记录未找到错误直接赋值给ErrRecordNotFound。
 )
 
-type UserDAO struct {
+type UserDAO interface {
+	Insert(ctx context.Context, u User) error
+	FindByEmail(ctx context.Context, email string) (User, error)
+	UpdateById(ctx context.Context, entity User) error
+	FindById(ctx context.Context, uid int64) (User, error)
+	FindByPhone(ctx context.Context, phone string) (User, error)
+}
+
+type GORMUserDAO struct {
 	db *gorm.DB // db字段，类型为*gorm.DB，指定数据库连接。
 }
 
-func NewUserDAO(db *gorm.DB) *UserDAO {
-	return &UserDAO{
+func NewUserDAO(db *gorm.DB) UserDAO {
+	return &GORMUserDAO{
 		db: db,
 	}
 }
@@ -38,7 +46,7 @@ type User struct {
 }
 
 // Insert Insert方法，插入新的用户记录。
-func (dao *UserDAO) Insert(ctx context.Context, u User) error {
+func (dao *GORMUserDAO) Insert(ctx context.Context, u User) error {
 	now := time.Now().UnixMilli()
 	u.Ctime = now
 	u.Utime = now
@@ -54,14 +62,14 @@ func (dao *UserDAO) Insert(ctx context.Context, u User) error {
 }
 
 // FindByEmail 通过Email查找用户。
-func (dao *UserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
+func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).Where("email=?", email).First(&u).Error // 查询数据库。
 	return u, err
 }
 
 // UpdateById 根据ID更新用户信息。
-func (dao *UserDAO) UpdateById(ctx context.Context, entity User) error {
+func (dao *GORMUserDAO) UpdateById(ctx context.Context, entity User) error {
 	// 使用GORM的Model和Where方法定位记录，并使用Updates方法更新记录。
 	return dao.db.WithContext(ctx).Model(&entity).Where("id = ?", entity.Id).
 		Updates(map[string]any{
@@ -73,14 +81,14 @@ func (dao *UserDAO) UpdateById(ctx context.Context, entity User) error {
 }
 
 // FindById 通过ID查找用户
-func (dao *UserDAO) FindById(ctx context.Context, uid int64) (User, error) {
+func (dao *GORMUserDAO) FindById(ctx context.Context, uid int64) (User, error) {
 	var res User
 	err := dao.db.WithContext(ctx).Where("id = ?", uid).First(&res).Error // 查询数据库。
 	return res, err
 }
 
 // FindByPhone 通过电话号码查找用户。
-func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var res User
 	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&res).Error // 查询数据库。
 	return res, err
