@@ -9,7 +9,7 @@ import (
 	"webBook/internal/service/sms"
 )
 
-var ErrCodeSendTooMany = repository.ErrCodeVerifyTooMany // 导出错误，表示验证码发送过于频繁。
+var ErrCodeSendTooMany = repository.ErrCodeSendTooMany // 导出错误，表示验证码发送过于频繁。
 
 type CodeService interface {
 	Send(ctx context.Context, biz, phone string) error

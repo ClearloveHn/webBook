@@ -6,6 +6,7 @@ import (
 )
 
 var ErrCodeVerifyTooMany = cache.ErrCodeVerifyTooMany // 导出错误，表明验证码验证请求太频繁。
+var ErrCodeSendTooMany = cache.ErrCodeSendTooMany
 
 type CodeRepository interface {
 	Set(ctx context.Context, biz, phone, code string) error

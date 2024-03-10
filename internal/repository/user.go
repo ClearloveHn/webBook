@@ -59,6 +59,7 @@ func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 		AboutMe:  u.AboutMe,
 		Nickname: u.Nickname,
 		Birthday: time.UnixMilli(u.Birthday), // 将Unix时间毫秒数转换为time.Time对象。
+		Ctime:    time.UnixMilli(u.Ctime),
 	}
 }
 
