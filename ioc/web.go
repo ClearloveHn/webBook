@@ -9,6 +9,7 @@ import (
 	"webBook/internal/web"
 	"webBook/internal/web/middleware"
 	"webBook/pkg/ginx/middleware/ratelimit"
+	"webBook/pkg/limiter"
 )
 
 func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler) *gin.Engine {
@@ -42,7 +43,7 @@ func InitGinMiddlewares(redisClient redis.Cmdable) []gin.HandlerFunc {
 		func(ctx *gin.Context) {
 			println("这是我的 Middleware")
 		},
-		ratelimit.NewBuilder(redisClient, time.Second, 1000).Build(),
+		ratelimit.NewBuilder(limiter.NewRedisSlidingWindowLimiter(redisClient, time.Second, 1000)).Build(),
 		(&middleware.LoginJWTMiddlewareBuilder{}).CheckLogin(),
 	}
 }
