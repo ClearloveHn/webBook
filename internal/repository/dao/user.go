@@ -20,6 +20,7 @@ type UserDAO interface {
 	UpdateById(ctx context.Context, entity User) error
 	FindById(ctx context.Context, uid int64) (User, error)
 	FindByPhone(ctx context.Context, phone string) (User, error)
+	FindByWechat(ctx context.Context, openId string) (User, error)
 }
 
 type GORMUserDAO struct {
@@ -34,15 +35,17 @@ func NewUserDAO(db *gorm.DB) UserDAO {
 
 // User 定义User结构体，映射数据库中的用户表。
 type User struct {
-	Id       int64          `gorm:"primaryKey,autoIncrement"` // 主键，自动增长。
-	Email    sql.NullString `gorm:"unique"`                   // Email字段，唯一性约束。
-	Password string         // 密码字段。
-	Nickname string         `gorm:"type=varchar(128)"` // 昵称字段，指定类型为varchar(128)。
-	Birthday int64          // 生日字段。
-	AboutMe  string         `gorm:"type=varchar(4096)"` // 自我介绍字段，指定类型为varchar(4096)。
-	Phone    sql.NullString `gorm:"unique"`             // 电话字段，唯一性约束。
-	Ctime    int64          // 创建时间。
-	Utime    int64          // 更新时间。
+	Id            int64          `gorm:"primaryKey,autoIncrement"` // 主键，自动增长。
+	Email         sql.NullString `gorm:"unique"`                   // Email字段，唯一性约束。
+	Password      string         // 密码字段。
+	Nickname      string         `gorm:"type=varchar(128)"` // 昵称字段，指定类型为varchar(128)。
+	Birthday      int64          // 生日字段。
+	AboutMe       string         `gorm:"type=varchar(4096)"` // 自我介绍字段，指定类型为varchar(4096)。
+	Phone         sql.NullString `gorm:"unique"`             // 电话字段，唯一性约束。
+	Ctime         int64          // 创建时间。
+	Utime         int64          // 更新时间。
+	WechatOpenId  sql.NullString `gorm:"unique"`
+	WechatUnionId sql.NullString
 }
 
 // Insert Insert方法，插入新的用户记录。
@@ -92,4 +95,10 @@ func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (User, er
 	var res User
 	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&res).Error // 查询数据库。
 	return res, err
+}
+
+func (dao *GORMUserDAO) FindByWechat(ctx context.Context, openId string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("wechat_open_id=?", openId).First(&u).Error
+	return u, err
 }

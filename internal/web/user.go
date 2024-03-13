@@ -22,6 +22,7 @@ type UserHandler struct {
 	passwordRexExp *regexp.Regexp      // 用于密码格式验证的正则表达式。
 	svc            service.UserService // 用户服务实例，处理用户业务逻辑。
 	codeSvc        service.CodeService // 验证码服务实例，处理验证码逻辑。
+	jwtHandler
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
@@ -318,12 +319,4 @@ func (h *UserHandler) Profile(ctx *gin.Context) {
 		AboutMe:  u.AboutMe,
 		Birthday: u.Birthday.Format(time.DateOnly),
 	})
-}
-
-var JWTKey = []byte("k6CswdUm77WKcbM68UQUuxVsHSpTCwgK")
-
-type UserClaims struct {
-	jwt.RegisteredClaims        // 内嵌的RegisteredClaims结构体，包含了所有的标准JWT声明。
-	Uid                  int64  // 用户的唯一标识符。
-	UserAgent            string // 用户的代理信息。
 }
