@@ -9,6 +9,7 @@ import (
 	"time"
 	"webBook/internal/domain"
 	"webBook/internal/service"
+	jwt2 "webBook/internal/web/jwt"
 )
 
 const (
@@ -22,7 +23,7 @@ type UserHandler struct {
 	passwordRexExp *regexp.Regexp      // 用于密码格式验证的正则表达式。
 	svc            service.UserService // 用户服务实例，处理用户业务逻辑。
 	codeSvc        service.CodeService // 验证码服务实例，处理验证码逻辑。
-	jwtHandler
+	jwt2.jwtHandler
 }
 
 func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
@@ -210,7 +211,7 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 
 // 生成并设置JWT令牌
 func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
-	uc := UserClaims{
+	uc := jwt2.UserClaims{
 		Uid:       uid,
 		UserAgent: ctx.GetHeader("User-Agent"),
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -218,7 +219,7 @@ func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-	tokenStr, err := token.SignedString(JWTKey)
+	tokenStr, err := token.SignedString(jwt2.JWTKey)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 		return
@@ -270,7 +271,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 	// 验证用户身份。
-	uc, ok := ctx.MustGet("user").(UserClaims)
+	uc, ok := ctx.MustGet("user").(jwt2.UserClaims)
 	if !ok {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
@@ -297,7 +298,7 @@ func (h *UserHandler) Edit(ctx *gin.Context) {
 
 // Profile 获取用户的个人资料
 func (h *UserHandler) Profile(ctx *gin.Context) {
-	uc, ok := ctx.MustGet("user").(UserClaims)
+	uc, ok := ctx.MustGet("user").(jwt2.UserClaims)
 	if !ok {
 		ctx.AbortWithStatus(http.StatusUnauthorized)
 		return
