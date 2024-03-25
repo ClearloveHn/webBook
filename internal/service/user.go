@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 	"webBook/internal/domain"
 	"webBook/internal/repository"
@@ -25,12 +26,14 @@ type UserService interface {
 }
 
 type userService struct {
-	repo repository.UserRepository // repo字段，指向UserRepository结构体实例，用于仓库层操作。
+	repo   repository.UserRepository // repo字段，指向UserRepository结构体实例，用于仓库层操作。
+	logger *zap.Logger
 }
 
 func NewUserService(repo repository.UserRepository) UserService {
 	return &userService{
-		repo: repo,
+		repo:   repo,
+		logger: zap.L(),
 	}
 }
 
@@ -85,9 +88,10 @@ func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.
 
 func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
 	u, err := svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
-	if err != repository.ErrUserNotFound {
+	if !errors.Is(err, repository.ErrUserNotFound) {
 		return u, err
 	}
+	svc.logger.Info("新用户", zap.Any("wechatInfo", wechatInfo))
 	err = svc.repo.Create(ctx, domain.User{
 		WechatInfo: wechatInfo,
 	})

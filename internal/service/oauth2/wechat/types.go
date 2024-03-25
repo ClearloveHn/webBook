@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"webBook/internal/domain"
+	"webBook/pkg/logger"
 )
 
 type Service interface {
@@ -20,13 +21,15 @@ type service struct {
 	appID     string
 	appSecret string
 	client    *http.Client
+	l         logger.LoggerV1
 }
 
-func NewService(appID string, appSecret string) Service {
+func NewService(appID string, appSecret string, l logger.LoggerV1) Service {
 	return &service{
 		appID:     appID,
 		appSecret: appSecret,
 		client:    http.DefaultClient,
+		l:         l,
 	}
 }
 func (s *service) VerifyCode(ctx context.Context,
@@ -41,7 +44,6 @@ func (s *service) VerifyCode(ctx context.Context,
 	if err != nil {
 		return domain.WechatInfo{}, err
 	}
-
 	var res Result
 	err = json.NewDecoder(httpResp.Body).Decode(&res)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/ecodeclub/ekit"
 	"github.com/ecodeclub/ekit/slice"
 	sms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms/v20210111"
+	"go.uber.org/zap"
 )
 
 // Service 结构体定义，包含腾讯云SMS客户端和相关配置。
@@ -33,6 +34,9 @@ func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers
 	request.TemplateParamSet = s.toPtrSlice(args)  // 设置短信模板参数。
 	request.PhoneNumberSet = s.toPtrSlice(numbers) // 设置接收短信的手机号码。
 	response, err := s.client.SendSms(request)     // 调用腾讯云SMS客户端发送短信。
+	zap.L().Debug("请求腾讯SendSms接口",
+		zap.Any("req", request),
+		zap.Any("resp", response))
 	// 处理异常。
 	if err != nil {
 		return err // 如果有错误，直接返回错误。
